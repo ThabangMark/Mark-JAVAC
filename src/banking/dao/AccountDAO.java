@@ -36,6 +36,7 @@ public class AccountDAO {
 
         } catch (SQLException e) {
             System.err.println("Error creating account: " + e.getMessage());
+            e.printStackTrace();
         }
         return false;
     }
@@ -43,18 +44,31 @@ public class AccountDAO {
     public Account getAccountByNumber(String accountNumber) {
         String sql = "SELECT * FROM accounts WHERE account_number = ?";
 
-        try (Connection conn = DatabaseUtil.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
 
+        try {
+            conn = DatabaseUtil.getConnection();
+            pstmt = conn.prepareStatement(sql);
             pstmt.setString(1, accountNumber);
-            ResultSet rs = pstmt.executeQuery();
+            rs = pstmt.executeQuery();
 
             if (rs.next()) {
-                return mapResultSetToAccount(rs);
+                Account account = mapResultSetToAccount(rs);
+                return account;
             }
 
         } catch (SQLException e) {
             System.err.println("Error fetching account: " + e.getMessage());
+            e.printStackTrace();
+        } finally {
+            try {
+                if (rs != null) rs.close();
+                if (pstmt != null) pstmt.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
         }
         return null;
     }
@@ -63,11 +77,15 @@ public class AccountDAO {
         List<Account> accounts = new ArrayList<>();
         String sql = "SELECT * FROM accounts WHERE customer_id = ? ORDER BY date_opened DESC";
 
-        try (Connection conn = DatabaseUtil.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
 
+        try {
+            conn = DatabaseUtil.getConnection();
+            pstmt = conn.prepareStatement(sql);
             pstmt.setInt(1, customerId);
-            ResultSet rs = pstmt.executeQuery();
+            rs = pstmt.executeQuery();
 
             while (rs.next()) {
                 accounts.add(mapResultSetToAccount(rs));
@@ -75,6 +93,14 @@ public class AccountDAO {
 
         } catch (SQLException e) {
             System.err.println("Error fetching accounts: " + e.getMessage());
+            e.printStackTrace();
+        } finally {
+            try {
+                if (rs != null) rs.close();
+                if (pstmt != null) pstmt.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
         }
         return accounts;
     }
@@ -83,16 +109,35 @@ public class AccountDAO {
         List<Account> accounts = new ArrayList<>();
         String sql = "SELECT * FROM accounts ORDER BY date_opened DESC";
 
-        try (Connection conn = DatabaseUtil.getConnection();
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(sql)) {
+        Connection conn = null;
+        Statement stmt = null;
+        ResultSet rs = null;
+
+        try {
+            conn = DatabaseUtil.getConnection();
+            stmt = conn.createStatement();
+            rs = stmt.executeQuery(sql);
 
             while (rs.next()) {
-                accounts.add(mapResultSetToAccount(rs));
+                try {
+                    Account account = mapResultSetToAccount(rs);
+                    accounts.add(account);
+                } catch (SQLException e) {
+                    System.err.println("Error mapping account: " + e.getMessage());
+                    e.printStackTrace();
+                }
             }
 
         } catch (SQLException e) {
             System.err.println("Error fetching all accounts: " + e.getMessage());
+            e.printStackTrace();
+        } finally {
+            try {
+                if (rs != null) rs.close();
+                if (stmt != null) stmt.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
         }
         return accounts;
     }
@@ -110,6 +155,7 @@ public class AccountDAO {
 
         } catch (SQLException e) {
             System.err.println("Error updating account balance: " + e.getMessage());
+            e.printStackTrace();
         }
         return false;
     }
@@ -128,6 +174,7 @@ public class AccountDAO {
 
         } catch (SQLException e) {
             System.err.println("Error updating account: " + e.getMessage());
+            e.printStackTrace();
         }
         return false;
     }
@@ -143,6 +190,10 @@ public class AccountDAO {
         // Get customer
         CustomerDAO customerDAO = new CustomerDAO();
         Customer customer = customerDAO.getCustomerById(rs.getInt("customer_id"));
+
+        if (customer == null) {
+            throw new SQLException("Customer not found for account " + accountNumber);
+        }
 
         Account account;
 

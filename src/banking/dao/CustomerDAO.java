@@ -12,7 +12,7 @@ public class CustomerDAO {
         String sql = "INSERT INTO customers (first_name, surname, address, phone_number, email) VALUES (?, ?, ?, ?, ?)";
 
         try (Connection conn = DatabaseUtil.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
             pstmt.setString(1, customer.getFirstName());
             pstmt.setString(2, customer.getSurname());
@@ -22,15 +22,20 @@ public class CustomerDAO {
 
             int affectedRows = pstmt.executeUpdate();
             if (affectedRows > 0) {
-                ResultSet rs = pstmt.getGeneratedKeys();
-                if (rs.next()) {
-                    customer.setCustomerId(rs.getInt(1));
+                // Retrieve the generated customer_id using last_insert_rowid()
+                String getIdSql = "SELECT last_insert_rowid()";
+                try (Statement stmt = conn.createStatement();
+                     ResultSet rs = stmt.executeQuery(getIdSql)) {
+                    if (rs.next()) {
+                        customer.setCustomerId(rs.getInt(1));
+                    }
                 }
                 return true;
             }
 
         } catch (SQLException e) {
             System.err.println("Error creating customer: " + e.getMessage());
+            e.printStackTrace();
         }
         return false;
     }

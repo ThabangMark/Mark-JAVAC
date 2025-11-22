@@ -4,14 +4,21 @@ import java.sql.*;
 
 public class DatabaseUtil {
     private static final String URL = "jdbc:sqlite:banking_system.db";
-    private static Connection connection = null;
 
-    // Get database connection
+    // Get database connection - create NEW connection each time
     public static Connection getConnection() throws SQLException {
-        if (connection == null || connection.isClosed()) {
-            connection = DriverManager.getConnection(URL);
+        try {
+            // Explicitly load the SQLite JDBC driver
+            Class.forName("org.sqlite.JDBC");
+
+            // Return a NEW connection every time
+            return DriverManager.getConnection(URL);
+
+        } catch (ClassNotFoundException e) {
+            System.err.println("SQLite JDBC Driver not found! Make sure sqlite-jdbc jar is in classpath.");
+            e.printStackTrace();
+            throw new SQLException("SQLite JDBC Driver not found", e);
         }
-        return connection;
     }
 
     // Initialize database tables
@@ -96,14 +103,9 @@ public class DatabaseUtil {
         }
     }
 
-    // Close connection
+    // Close connection - no longer needed since we create new connections
     public static void closeConnection() {
-        try {
-            if (connection != null && !connection.isClosed()) {
-                connection.close();
-            }
-        } catch (SQLException e) {
-            System.err.println("Error closing connection: " + e.getMessage());
-        }
+        // No-op since connections are managed with try-with-resources
+        System.out.println("Database connections closed.");
     }
 }

@@ -13,7 +13,7 @@ public class TransactionDAO {
         String sql = "INSERT INTO transactions (account_number, transaction_type, amount, balance_after, description, timestamp) VALUES (?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = DatabaseUtil.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
             pstmt.setString(1, transaction.getAccountNumber());
             pstmt.setString(2, transaction.getType().name());
@@ -24,15 +24,20 @@ public class TransactionDAO {
 
             int affectedRows = pstmt.executeUpdate();
             if (affectedRows > 0) {
-                ResultSet rs = pstmt.getGeneratedKeys();
-                if (rs.next()) {
-                    transaction.setTransactionId(rs.getInt(1));
+                // Retrieve the generated transaction_id using last_insert_rowid()
+                String getIdSql = "SELECT last_insert_rowid()";
+                try (Statement stmt = conn.createStatement();
+                     ResultSet rs = stmt.executeQuery(getIdSql)) {
+                    if (rs.next()) {
+                        transaction.setTransactionId(rs.getInt(1));
+                    }
                 }
                 return true;
             }
 
         } catch (SQLException e) {
             System.err.println("Error creating transaction: " + e.getMessage());
+            e.printStackTrace();
         }
         return false;
     }

@@ -93,11 +93,22 @@ public class LoginView {
             }
         });
 
-        Label registerLabel = new Label("Don't have an account? Contact admin");
-        registerLabel.setFont(Font.font("Arial", 12));
-        registerLabel.setTextFill(Color.GRAY);
+        // NEW: Register button for customers
+        Button registerButton = new Button("Create New Account");
+        registerButton.setPrefWidth(200);
+        registerButton.setPrefHeight(45);
+        registerButton.setStyle("-fx-background-color: #2ecc71; -fx-text-fill: white; -fx-font-size: 16px; -fx-font-weight: bold; -fx-background-radius: 5;");
+        registerButton.setOnMouseEntered(e -> registerButton.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-size: 16px; -fx-font-weight: bold; -fx-background-radius: 5;"));
+        registerButton.setOnMouseExited(e -> registerButton.setStyle("-fx-background-color: #2ecc71; -fx-text-fill: white; -fx-font-size: 16px; -fx-font-weight: bold; -fx-background-radius: 5;"));
 
-        Label infoLabel = new Label("Default login: admin / admin123");
+        registerButton.setOnAction(e -> {
+            CustomerRegistrationView registrationView = new CustomerRegistrationView(stage);
+            registrationView.show();
+        });
+
+        Separator separator = new Separator();
+
+        Label infoLabel = new Label("Default admin login: admin / admin123");
         infoLabel.setFont(Font.font("Arial", 11));
         infoLabel.setTextFill(Color.LIGHTGRAY);
         infoLabel.setStyle("-fx-font-style: italic;");
@@ -108,7 +119,9 @@ public class LoginView {
                 passwordLabel, passwordField,
                 errorLabel,
                 loginButton,
-                registerLabel,
+                separator,
+                new Label("Don't have an account?"),
+                registerButton,
                 infoLabel
         );
 
@@ -121,7 +134,15 @@ public class LoginView {
     }
 
     private void openDashboard(User user) {
-        DashboardView dashboardView = new DashboardView(stage, authController);
-        dashboardView.show();
+        // Check user role and open appropriate dashboard
+        if (user.getRole() == User.UserRole.CUSTOMER) {
+            // Open customer dashboard
+            CustomerDashboardView customerDashboard = new CustomerDashboardView(stage, authController);
+            customerDashboard.show();
+        } else {
+            // Open admin/teller dashboard
+            DashboardView dashboardView = new DashboardView(stage, authController);
+            dashboardView.show();
+        }
     }
 }

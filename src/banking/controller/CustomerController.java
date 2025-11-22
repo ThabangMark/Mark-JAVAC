@@ -41,6 +41,31 @@ public class CustomerController {
         return customerDAO.createCustomer(customer);
     }
 
+    public boolean createCustomer(Customer customer) {
+        if (customer == null) {
+            throw new IllegalArgumentException("Customer cannot be null");
+        }
+        if (customer.getFirstName() == null || customer.getFirstName().trim().isEmpty()) {
+            throw new IllegalArgumentException("First name is required");
+        }
+        if (customer.getSurname() == null || customer.getSurname().trim().isEmpty()) {
+            throw new IllegalArgumentException("Surname is required");
+        }
+        if (customer.getEmail() == null || customer.getEmail().trim().isEmpty()) {
+            throw new IllegalArgumentException("Email is required");
+        }
+        if (!isValidEmail(customer.getEmail())) {
+            throw new IllegalArgumentException("Invalid email format");
+        }
+
+        // Check if email already exists
+        if (customerDAO.getCustomerByEmail(customer.getEmail()) != null) {
+            throw new IllegalArgumentException("Email already registered");
+        }
+
+        return customerDAO.createCustomer(customer);
+    }
+
     public Customer getCustomerById(int customerId) {
         return customerDAO.getCustomerById(customerId);
     }

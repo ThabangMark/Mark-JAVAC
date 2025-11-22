@@ -30,7 +30,7 @@ public class UserDAO {
         String sql = "INSERT INTO users (username, password, role, customer_id) VALUES (?, ?, ?, ?)";
 
         try (Connection conn = DatabaseUtil.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
             pstmt.setString(1, user.getUsername());
             pstmt.setString(2, user.getPassword());
@@ -43,15 +43,20 @@ public class UserDAO {
 
             int affectedRows = pstmt.executeUpdate();
             if (affectedRows > 0) {
-                ResultSet rs = pstmt.getGeneratedKeys();
-                if (rs.next()) {
-                    user.setUserId(rs.getInt(1));
+                // Retrieve the generated user_id using last_insert_rowid()
+                String getIdSql = "SELECT last_insert_rowid()";
+                try (Statement stmt = conn.createStatement();
+                     ResultSet rs = stmt.executeQuery(getIdSql)) {
+                    if (rs.next()) {
+                        user.setUserId(rs.getInt(1));
+                    }
                 }
                 return true;
             }
 
         } catch (SQLException e) {
             System.err.println("Error creating user: " + e.getMessage());
+            e.printStackTrace();
         }
         return false;
     }
